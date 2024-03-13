@@ -1,0 +1,123 @@
+###############################################################################
+Overview
+###############################################################################
+This script is designed to train predictive models for classification tasks using machine learning algorithms. It supports various models, including kNN, binomial logistic regression and multinomial logistic regression. The script includes functionality for preprocessing data, handling missing values, normalizing data, encoding categorical variables, and reducing dimensionality using PCA. Additionally, users can choose feature selection methods and specify hyperparameters for each model.
+
+###############################################################################
+Usage
+###############################################################################
+To use the script, follow the instructions below:
+
+1. Prerequisites
+Make sure you have these R packages installed in your R environment before running the scripts.
+
+caret
+dplyr
+pROC
+class
+ROCR
+mice
+tidymodels
+glmnet
+nnet
+
+These packages are used for various tasks, including data preprocessing, imputation, dimensionality reduction, feature selection, and machine learning model training and evaluation. 
+If you are running the scripts on Rstudio/slurm cluster, all the packages have been installed by default.
+
+If any of these packages is not installed yet, you can use the install.packages() function in R to install them:
+install.packages(c("caret", "dplyr", "pROC", "class", "ROCR", "mice", "tidymodels", "glmnet", "nnet"))
+
+2. Running the Script
+
+Navigate to the directory where the script files are located.
+
+By typing ./build_predictive_model.sh, it will display the information about how to run this script.
+
+Command Line Options
+
+-i: Path to the input data file (in .csv format). Rows represent observations, and columns represent features. Example: sample_dataset/RNAseq_data.csv.
+
+-l: Path to the label file (in .csv format). The first column contains sample names matching the input data file. The second column contains true labels. Example: sample_dataset/labels.csv.
+
+-o: Path to save the predictive model.
+
+-p: Path to save the log file including performance metrics.
+
+-n: Normalize data (TRUE/FALSE). Standarize and scale the data during preprocessing. Normalization is recommended.
+
+-m: Imputation method for missing values (NULL/mean/median/multiple). 
+   - 'NULL': No imputation.
+   - 'mean/median': Use mean/median values to substitute missing values.
+   - 'multiple': Perform multiple imputation using the 'mice' R package.
+
+-c: Perform complete case analysis (TRUE/FALSE). 
+   - TRUE: Retain only samples with no missing values.
+   - Imputation is automatically disabled when set to TRUE.
+
+-e: Encode categorical variables (TRUE/FALSE). 
+   - TRUE: Perform one-hot encoding for categorical features.
+   - Categorical features are automatically detected if data types are 'character' or 'factor'.
+
+-r: Reduce dimension using PCA (TRUE/FALSE). 
+   - TRUE: Perform principle component analysis.
+
+-u: Number of components for PCA (specify if -r is TRUE, otherwise NULL). 
+   - Retain specified number of top principal components for downstream analysis.
+
+-f: Feature selection method (NULL/most_variable/lasso/rfe). 
+   - 'NULL': No feature selection.
+   - 'most_variable': Remove features with zero variance.
+   - 'lasso': Lasso regularization for feature selection.
+   - 'rfe': Recursive Feature Elimination (RFE).
+   
+-g: Select a ML method (knn/binomial_logistic/multinomial_logistic).
+   - 'knn': k nearest neighbor (kNN) model.
+   - 'binomial_logistic': binomial logistic regression model with two outcomes. The positive outcome should be specified with the -t option.
+   - 'multinomial_logistic': multinomial logistic regression model supporting more than two outcomes.
+   
+-t: The positive outcome label. This is for binomial logistic regression model. The outcome labels other than the specified positive label would be treated as the negative label.
+
+Example usages:
+1) Build predictive models from gene expression data using principle component analysis:
+./build_predictive_model.sh -i sample_dataset/RNAseq_data.csv -l sample_dataset/labels.csv -o ./test_run/model.rds -p ./test_run/result.log -n TRUE -c TRUE -r TRUE -u 25 -g knn
+
+2) Build predictive models using DNA mutation data with feature selection:
+./build_predictive_model.sh -i sample_dataset/NGS_data.csv -l sample_dataset/labels.csv -o ./test_run/model.rds -p ./test_run/result.log -n TRUE -c TRUE -f rfe -g binomial_logistic -t group1
+
+3) Build predictive models from DNA methylation data using imputation to deal with missing values:
+./build_predictive_model.sh -i sample_dataset/Methylation_data.csv -l sample_dataset/labels.csv -o ./test_run/model.rds -p ./test_run/result.log -n TRUE -m mean -f rfe -g multinomial_logistic
+
+
+3. Tips and recommendations
+(1) model selection:
+For data with two outcomes, binary classification should be applied. 'knn' and 'binomial_logistic' are suitable for this task.
+
+For data with three or more outcomes, multiclass classification should be applied. 'knn' and 'multinomial_logistic' can be used. If you would like to use 'binomial_logistic' in this case, it also works. Specify the positive outcome by setting -t option, and it will automatically treat other outcomes as negative and perform binary classification. For example, if the samples belong to three groups: group1, group2 and group3. If -t is set to 'group1' and 'binomial_logistic' model is selected, it will perform binary classification for group1 vs others.
+
+(2) feature selection:
+The best feature selection to use largely depends on the nature of the data. May try different method such as 'lasso' and 'rfe', and figure out which method can improve model performance.
+
+(3) data normalization:
+Normalization / scale is generally recommended in most cases.
+
+(4) Missing values:
+Having missing values in your input data may have unignorable effects on the performance of predictive models.
+If you have missing values in your data, it is highly recommended to properly deal with them ahead of running this scripts.
+Here we offer some basic method to deal with missing values.
+
+Complete case analysis: by setting -c TRUE, only samples without missing values would be retained for further analysis.
+
+Mean/median substitution: by setting -m mean or -m median, the missing values would be replaced by the mean or median values of all the remaining non-missing values. This is a simple substitution, and may not be applicable to some contexts.
+
+Multiple imputation: by setting -m multiple, multiple imputation would be performed by the R package 'MICE' with default parameters and five rounds of iterations. You may refer to the paper and documentation of 'MICE' for detail methodology. Please note that it may takes hours to days to finish the imputation process depending on the volumne of the data matrix.
+
+################################################################################
+Example Datasets
+################################################################################
+For testing purposes, we have provided sample datasets with fake names and shuffled orders. Feel free to use these datasets to test the script.
+
+sample_dataset/RNAseq_data.csv
+sample_dataset/NGS_data.csv
+sample_dataset/Methylation_data.csv
+sample_dataset/labels.csv
+
